@@ -7,9 +7,13 @@ import '../models/stage.dart';
 import '../models/stage_details.dart';
 import '../models/baby_size_comparison.dart';
 import '../models/weekly_tip.dart';
+import '../models/checklist_item.dart';
+import '../models/appointment.dart';
+import '../models/hospital_bag_item.dart';
 
 class ApiService {
-  static const String baseUrl = 'http://localhost:3000';
+  //static const String baseUrl = 'http://localhost:3000';
+  static const String baseUrl = 'http://192.168.1.137:3000';
   
   static Future<String> fetchMessage() async {
     final response = await http.get(
@@ -107,5 +111,92 @@ class ApiService {
     } else {
       throw Exception('Error al cargar el consejo semanal');
     }
+  }
+
+  static Future<List<ChecklistItem>> fetchChecklist(int week) async {
+    final response = await http.get(
+      Uri.parse('$baseUrl/checklist/$week'),
+    );
+
+    if (response.statusCode == 200) {
+      final data = json.decode(response.body);
+
+      if (data is List) {
+        return data
+            .map((item) => ChecklistItem.fromJson(item))
+            .toList();
+      }
+
+      return [];
+    } else {
+      return [];
+    }
+  }
+
+  static Future<List<Appointment>> fetchAppointments(
+  int week,
+  ) async {
+    final response = await http.get(
+      Uri.parse('$baseUrl/appointments/$week'),
+    );
+
+    if (response.statusCode == 200) {
+      final List<dynamic> data =
+          json.decode(response.body);
+
+      return data
+          .map((item) => Appointment.fromJson(item))
+          .toList();
+    }
+
+    throw Exception(
+      'Error al cargar citas',
+    );
+  }
+
+  static Future<List<HospitalBagItem>> fetchHospitalBag() async {
+    final response = await http.get(
+      Uri.parse('$baseUrl/hospital-bag'),
+    );
+
+    if (response.statusCode == 200) {
+      final List<dynamic> data =
+          json.decode(response.body);
+
+      return data
+          .map(
+            (item) =>
+                HospitalBagItem.fromJson(item),
+          )
+          .toList();
+    }
+
+    throw Exception(
+      'Error al cargar bolsa hospital',
+    );
+  }
+
+  static Future<String> sendChatMessage({required String message, required int selectedWeek, String? mood, String? lastDiaryEntry, String? hospitalBagProgress,required List<Map<String, dynamic>> conversationHistory,}) async {
+    final response = await http.post(
+      Uri.parse('$baseUrl/chat'),
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: json.encode({
+        'message': message,
+        'selectedWeek': selectedWeek,
+        'mood': mood,
+        'lastDiaryEntry': lastDiaryEntry,
+        'hospitalBagProgress': hospitalBagProgress,
+        'conversationHistory': conversationHistory,
+      }),
+    );
+
+    if (response.statusCode == 200) {
+      final data = json.decode(response.body);
+      return data['reply'] ?? 'No he podido generar una respuesta.';
+    }
+
+    throw Exception('Error al enviar mensaje al asistente');
   }
 }
